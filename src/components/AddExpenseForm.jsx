@@ -5,10 +5,14 @@ const CATEGORIES = ["Food", "Travel", "Fun", "Stay"];
 
 function evenPercents(ids) {
   if (!ids.length) return {};
-  const base = Number((100 / ids.length).toFixed(2));
+  const totalCents = 10000;
+  const baseCents = Math.floor(totalCents / ids.length);
+  let remainder = totalCents - baseCents * ids.length;
   const pcts = {};
-  ids.forEach((id, i) => {
-    pcts[id] = i === ids.length - 1 ? Number((100 - base * (ids.length - 1)).toFixed(2)) : base;
+  ids.forEach((id) => {
+    const shareCents = baseCents + (remainder > 0 ? 1 : 0);
+    if (remainder > 0) remainder--;
+    pcts[id] = Number((shareCents / 100).toFixed(2));
   });
   return pcts;
 }
@@ -57,13 +61,17 @@ export default function AddExpenseForm({ members, onAdd }) {
     onAdd({
       description: description.trim(),
       amount: n,
-      paidBy: Number(paidBy),
+      paidBy: Number(paidBy || members[0]?.id),
       splitType,
       splitWith: splitWith.map(Number),
       percents: splitType === "percent" ? percents : undefined,
-      date: new Date(date),
+      date: date || new Date().toISOString().slice(0, 10),
       category,
     });
+
+    setDescription("");
+    setAmount("");
+    setError("");
   }
 
   return (

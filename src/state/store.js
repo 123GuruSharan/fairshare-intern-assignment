@@ -6,7 +6,6 @@ function hydrate(data) {
     members: data.members.map((m) => ({ ...m })),
     expenses: data.expenses.map((e) => ({
       ...e,
-      date: new Date(e.date),
     })),
   };
 }
@@ -19,18 +18,30 @@ export function loadState(seed) {
       localStorage.setItem(KEY, JSON.stringify(initial));
       return initial;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (
+      !parsed ||
+      !Array.isArray(parsed.members) ||
+      !Array.isArray(parsed.expenses)
+    ) {
+      return hydrate(seed);
+    }
+    return parsed;
   } catch {
     return hydrate(seed);
   }
 }
 
 export function persistState(state) {
-  localStorage.setItem(KEY, JSON.stringify(state));
+  try {
+    localStorage.setItem(KEY, JSON.stringify(state));
+  } catch (e) {
+    console.error("Failed to persist state", e);
+  }
 }
 
 export function nextExpenseId() {
-  return `e-${Date.now()}`;
+  return `e-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 }
 
 export function nextMemberId(members) {
@@ -44,14 +55,18 @@ export function reducer(state, action) {
       return { ...state, expenses: [...state.expenses, action.expense] };
     }
     case "DELETE_EXPENSE": {
-      const next = state.expenses.slice();
-      next.splice(action.index, 1);
-      return { ...state, expenses: next };
+      return {
+        ...state,
+        expenses: state.expenses.filter((e) => e.id !== action.id),
+      };
     }
     case "UPDATE_EXPENSE": {
-      const next = state.expenses.slice();
-      next[action.index] = { ...next[action.index], ...action.patch };
-      return { ...state, expenses: next };
+      return {
+        ...state,
+        expenses: state.expenses.map((e) =>
+          e.id === action.id ? { ...e, ...action.patch } : e
+        ),
+      };
     }
     case "ADD_MEMBER": {
       return { ...state, members: [...state.members, action.member] };
@@ -60,3 +75,4 @@ export function reducer(state, action) {
       return state;
   }
 }
+
