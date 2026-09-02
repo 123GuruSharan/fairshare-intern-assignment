@@ -50,7 +50,7 @@ export default function App() {
   function addExpense(partial) {
     dispatch({
       type: "ADD_EXPENSE",
-      expense: { id: nextExpenseId(), ...partial },
+      expense: { id: nextExpenseId(), createdAt: Date.now(), ...partial },
     });
   }
 

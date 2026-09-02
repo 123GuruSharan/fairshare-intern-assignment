@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { formatMoney } from "../lib/money.js";
-import { dateValue, formatDate } from "../lib/format.js";
+import { createdValue, dateValue, formatDate } from "../lib/format.js";
 
 function initials(name) {
   return (name || "")
@@ -74,7 +74,11 @@ export default function ExpenseList({
   onUpdate,
 }) {
   const memberMap = Object.fromEntries(members.map((m) => [m.id, m]));
-  const sorted = [...expenses].sort((a, b) => dateValue(b.date) - dateValue(a.date));
+  const sorted = [...expenses].sort((a, b) => {
+    const dateDiff = dateValue(b.date) - dateValue(a.date);
+    if (dateDiff !== 0) return dateDiff;
+    return createdValue(b) - createdValue(a);
+  });
 
   return (
     <section className="card">

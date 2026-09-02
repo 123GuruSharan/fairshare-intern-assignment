@@ -46,3 +46,20 @@ export function dateValue(date) {
   return 0;
 }
 
+export function createdValue(expense) {
+  if (!expense) return 0;
+  if (typeof expense.createdAt === "number" && !Number.isNaN(expense.createdAt)) {
+    return expense.createdAt;
+  }
+  if (typeof expense.id === "string" && expense.id.startsWith("e-")) {
+    const ts = Number(expense.id.split("-")[1]);
+    if (!Number.isNaN(ts) && ts > 0) return ts;
+  }
+  if (typeof expense.id === "string" && expense.id.startsWith("e")) {
+    const num = Number(expense.id.slice(1));
+    if (!Number.isNaN(num)) return num;
+  }
+  return 0;
+}
+
+

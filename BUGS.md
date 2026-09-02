@@ -4,28 +4,31 @@ This document logs all bugs found and fixed in FairShare, including root causes,
 
 ---
 
-## Bug 1 — Expense list sorting order (Oldest first instead of Newest first)
+## Bug 1 — Expense list sorting order (Oldest first instead of Newest first, and same-date creation tie-breaking)
 
 ### Problem
-`ExpenseList.jsx` sorted expenses in ascending date order (`a.date - b.date`), causing oldest expenses to appear at the top despite the UI header indicating "Newest first". In addition, `dateValue` in `format.js` returned string dates directly without converting them to numeric timestamps, causing `string - string` (`NaN`) failures.
+`ExpenseList.jsx` sorted expenses in ascending date order (`a.date - b.date`), causing oldest expenses to appear at the top despite the UI header indicating "Newest first". In addition, `dateValue` in `format.js` returned string dates directly without converting them to numeric timestamps, causing `string - string` (`NaN`) failures. Furthermore, when multiple expenses shared the same calendar date, there was no creation timestamp tie-breaker, causing newly added same-day expenses to appear below older expenses of that date.
 
 ### Reproduction
 1. Open the app.
 2. The first row in the expenses list is "Wine" (7 Mar 2026).
 3. "Board game" (15 Mar 2026) is near the bottom.
+4. Adding multiple expenses on the same date (e.g. 16 Mar 2026) placed newly created expenses below earlier expenses of that date.
 
 ### Expected
-Expenses should be sorted newest first, with 15 Mar 2026 at the top and 7 Mar 2026 at the bottom.
+Expenses should be sorted newest first by date (15 Mar 2026 at the top, 7 Mar 2026 at the bottom). When two expenses share the same calendar date, the one created later must appear first.
 
 ### Actual
-The list was sorted oldest first.
+The list was sorted oldest first, and same-day expenses did not respect creation order.
 
 ### Fix
-- In `src/lib/format.js`, updated `dateValue` to reliably convert Date objects and `YYYY-MM-DD` / ISO date strings into numeric millisecond timestamps.
-- In `src/components/ExpenseList.jsx`, sorted using `dateValue(b.date) - dateValue(a.date)`.
+- In `src/App.jsx`, attached `createdAt: Date.now()` timestamp when creating a new expense.
+- In `src/lib/format.js`, updated `dateValue` to reliably convert Date objects and `YYYY-MM-DD` / ISO date strings into numeric millisecond timestamps, and added `createdValue` to resolve creation timestamps with fallbacks.
+- In `src/components/ExpenseList.jsx`, sorted primarily by date (`dateValue(b.date) - dateValue(a.date)`), breaking ties using `createdValue(b) - createdValue(a)`.
 
 ### Verification
-Verified sorting order in automated tests and UI: Board game (15 Mar) appears first, and Wine (7 Mar) appears last.
+Verified sorting order in automated tests and UI: Board game (15 Mar) appears first and Wine (7 Mar) appears last. For multiple expenses created on the same date, the later-created expense appears at the top.
+
 
 ---
 
